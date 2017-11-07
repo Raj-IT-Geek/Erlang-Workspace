@@ -1,0 +1,22 @@
+#!/home/voms/pine/erts-6.4/bin/escript
+
+main([File|_]) ->
+  net_kernel:start(['checkpin@127.0.0.1', longnames]),
+  erlang:set_cookie('checkpin@127.0.0.1', pine),
+  case net_adm:ping('pine@127.0.0.1') of
+    pong ->
+      load_pin(File);
+    _Else ->
+      io:format("OOPS! unable to connect~n")
+  end;
+main(_) ->
+  io:format("Usage: loadpinfile [File name with path]~n").
+
+load_pin(File) ->
+  case rpc:call('pine@127.0.1.1', pine_pins, loadfile, [File] ) of
+		ok ->
+      io:format("Hurrary! the file is loaded~n");
+    Other ->
+			io:format("Error: Something wrong with the file can't load it ~p~n",
+                [Other])
+  end.
