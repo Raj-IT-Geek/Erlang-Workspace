@@ -1,4 +1,4 @@
--module(add).
+-module(tail_recursive_add).
 -export([sum/1]).
 
 sum(N) ->

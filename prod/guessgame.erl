@@ -7,12 +7,16 @@ start(Limit) ->
 
 game(Pick) ->
   receive
-    Guess when Guess == Pick ->
+
+	Guess when Guess == Pick ->
       io:format("Hey you won~n");
+
     Guess when Guess > Pick ->
       io:format("try lower~n"),
       game(Pick);
+
     _ ->
       io:format("try higher~n"),
       game(Pick)
+
   end.

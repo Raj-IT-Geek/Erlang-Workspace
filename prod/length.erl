@@ -7,4 +7,3 @@ length([], Len) -> Len;
 length( [ _ | TailOfList ], Len) ->
     io:format("Tail: ~p \t Len:~p ~n", [TailOfList, Len]),
     length(TailOfList, Len+1).
-
