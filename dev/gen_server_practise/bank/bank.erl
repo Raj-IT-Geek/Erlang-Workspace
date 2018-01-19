@@ -11,14 +11,16 @@
 start() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 stop()  -> gen_server:call(?MODULE, stop).
 
-new_account(Customer_name)      -> gen_server:call(?MODULE, {new, Customer_name}).
-credit(Customer_name, Amount)  -> gen_server:call(?MODULE, {credit, Customer_name, Amount}).
-debit(Customer_name, Amount) -> gen_server:call(?MODULE, {debit, Customer_name, Amount}).
+new(Customer_name)              -> gen_server:call(?MODULE, {new_account, Customer_name}).
+credit(Customer_name, Amount)   -> gen_server:call(?MODULE, {credit_account, Customer_name, Amount}).
+debit(Customer_name, Amount)    -> gen_server:call(?MODULE, {debit_account, Customer_name, Amount}).
+balance(Customer_name)          -> gen_server:call(?MODULE, {account_balance, Customer_name}).
+close_account(Customer_name)    -> gen_server:call(?MODULE, {close_account, Customer_name}).
 
 init([]) ->
     {ok, #{}}.
 
-handle_call({new, Customer_name}, _From, Accounts) ->
+handle_call({new_account, Customer_name}, _From, Accounts) ->
     Reply = case maps:find(Customer_name, Accounts) of
                 {ok, _Balance} ->
                     Accounts1 = Accounts,
@@ -29,11 +31,11 @@ handle_call({new, Customer_name}, _From, Accounts) ->
             end,
     {reply, Reply, Accounts1};
 
-handle_call({credit, Customer_name, Amount}, _From, Accounts) ->
+handle_call({credit_account, Customer_name, Amount}, _From, Accounts) ->
     Reply = case maps:find(Customer_name, Accounts) of
                 {ok, Balance} ->
                     New_balance = Balance + Amount,
-                    Accounts1 = Accounts#{Customer_name => New_balance},
+                    Accounts1 = Accounts#{Customer_name := New_balance},
                     {ok, Customer_name, new_balance_is, New_balance};
                 error ->
                     Accounts1 = Accounts,
@@ -43,11 +45,11 @@ handle_call({credit, Customer_name, Amount}, _From, Accounts) ->
     {reply, Reply, Accounts1};
 
 
-handle_call({debit, Customer_name, Amount}, _From, Accounts) ->
+handle_call({debit_account, Customer_name, Amount}, _From, Accounts) ->
     Reply = case maps:find(Customer_name, Accounts) of
                 {ok, Balance} when Balance >= Amount ->
                     New_balance = Balance - Amount,
-                    Accounts1 = Accounts#{Customer_name => New_balance},
+                    Accounts1 = Accounts#{Customer_name := New_balance},
                     {ok, Customer_name, new_balance_is, New_balance};
                 {ok, Balance} ->
                     Accounts1 = Accounts,
@@ -59,6 +61,30 @@ handle_call({debit, Customer_name, Amount}, _From, Accounts) ->
 
     {reply, Reply, Accounts1};
 
+
+handle_call({account_balance, Customer_name}, _From, Accounts) ->
+    Reply = case maps:find(Customer_name, Accounts) of
+                {ok, Balance} ->
+                    {ok, Customer_name, balance_is, Balance};
+                error ->
+                    {error, invalid_account}
+            end,
+    {reply, Reply, Accounts};
+
+
+handle_call({close_account, Customer_name}, _From, Accounts) ->
+    Reply = case maps:find(Customer_name, Accounts) of
+                {ok, Balance} when Balance > 0 ->
+                    Accounts1 = Accounts,
+                    {error, Customer_name, please_withdraw_amount, Balance};
+                {ok, _Balance}  ->
+                    Accounts1 = maps:remove(Customer_name, Accounts),
+                    {ok, account_is_closed_for, Customer_name};
+                error ->
+                    Accounts1 = Accounts,
+                    {error, invalid_account}
+            end,
+    {reply, Reply, Accounts1};
 
 handle_call(stop, _From, Accounts)   ->
     {stop, normal, stopped, Accounts}.
