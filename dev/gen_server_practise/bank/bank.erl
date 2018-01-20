@@ -12,12 +12,12 @@ start() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 stop()  -> gen_server:call(?MODULE, stop).
 
 new(Customer_name)              -> gen_server:call(?MODULE, {new_account, Customer_name}).
-credit(Customer_name, Amount)   -> gen_server:call(?MODULE, {credit_account, Customer_name, Amount}).
-debit(Customer_name, Amount)    -> gen_server:call(?MODULE, {debit_account, Customer_name, Amount}).
+credit(Customer_name, Amount)   -> gen_server:call(?MODULE, {credit, Customer_name, Amount}).
+debit(Customer_name, Amount)    -> gen_server:call(?MODULE, {debit, Customer_name, Amount}).
 balance(Customer_name)          -> gen_server:call(?MODULE, {account_balance, Customer_name}).
 close(Customer_name)            -> gen_server:call(?MODULE, {close_account, Customer_name}).
-transfer(From_customer, Amount, To_customer) ->
-    gen_server:call(?MODULE, {transfer_amount, From_customer, Amount, To_customer}).
+transfer(From_customer, Amount,
+                    To_customer)-> gen_server:call(?MODULE, {transfer_amount, From_customer, Amount, To_customer}).
 
 
 init([]) ->
@@ -34,7 +34,7 @@ handle_call({new_account, Customer_name}, _From, Accounts) ->
             end,
     {reply, Reply, Accounts1};
 
-handle_call({credit_account, Customer_name, Amount}, _From, Accounts) ->
+handle_call({credit, Customer_name, Amount}, _From, Accounts) ->
     Reply = case maps:find(Customer_name, Accounts) of
                 {ok, Balance} ->
                     New_balance = Balance + Amount,
@@ -48,7 +48,7 @@ handle_call({credit_account, Customer_name, Amount}, _From, Accounts) ->
     {reply, Reply, Accounts1};
 
 
-handle_call({debit_account, Customer_name, Amount}, _From, Accounts) ->
+handle_call({debit, Customer_name, Amount}, _From, Accounts) ->
     Reply = case maps:find(Customer_name, Accounts) of
                 {ok, Balance} when Balance >= Amount ->
                     New_balance = Balance - Amount,
