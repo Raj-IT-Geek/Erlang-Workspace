@@ -1,124 +1,160 @@
 -module(bank).
 -behaviour(gen_server).
--export([start/0]).
-
-%% gen_server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2,
-        terminate/2, code_change/3]).
--compile(export_all).
 -define(SERVER, ?MODULE).
 
-start() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
-stop()  -> gen_server:call(?MODULE, stop).
+-export([init/1,
+        handle_call/3,
+        handle_cast/2,
+        handle_info/2,
+        terminate/2,
+        code_change/3]).
 
-new(Customer_name)              -> gen_server:call(?MODULE, {new_account, Customer_name}).
-credit(Customer_name, Amount)   -> gen_server:call(?MODULE, {credit, Customer_name, Amount}).
-debit(Customer_name, Amount)    -> gen_server:call(?MODULE, {debit, Customer_name, Amount}).
-balance(Customer_name)          -> gen_server:call(?MODULE, {account_balance, Customer_name}).
-close(Customer_name)            -> gen_server:call(?MODULE, {close_account, Customer_name}).
-transfer(From_customer, Amount,
-                    To_customer)-> gen_server:call(?MODULE, {transfer_amount, From_customer, Amount, To_customer}).
+-export([start/0,
+        stop/0,
+        new/1,
+        credit/2,
+        debit/2,
+        balance/1,
+        close/1,
+        transfer/3]).
 
+% Calling Functions
+start() ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+stop() ->
+  gen_server:cast(?MODULE, stop).
+
+new(CustomerName) ->
+  gen_server:call(?MODULE, {new, CustomerName}).
+
+credit(CustomerName, Amount) ->
+  gen_server:call(?MODULE, {credit, CustomerName, Amount}).
+
+debit(CustomerName, Amount) ->
+  gen_server:call(?MODULE, {debit, CustomerName, Amount}).
+
+balance(CustomerName) ->
+  gen_server:call(?MODULE, {balance, CustomerName}).
+
+close(CustomerName) ->
+  gen_server:call(?MODULE, {close, CustomerName}).
+
+transfer(FromCustomer, Amount, ToCustomer) ->
+  gen_server:call(?MODULE, {transfer, FromCustomer, Amount, ToCustomer}).
 
 init([]) ->
-    {ok, maps:new()}.
+  {ok, #{}}.
 
-handle_call({new_account, Customer_name}, _From, Accounts) ->
-    Reply = case maps:find(Customer_name, Accounts) of
-                {ok, _Balance} ->
-                    Accounts1 = Accounts,
-                    {error, Customer_name, account_already_exists};
-                error ->
-                    Accounts1 = Accounts#{Customer_name => 0},
-                    {ok, Customer_name, account_created}
-            end,
-    {reply, Reply, Accounts1};
+% Callback Functions
+handle_call({new, CustomerName}, _From, Accounts) ->
+  new_account(CustomerName, Accounts);
 
-handle_call({credit, Customer_name, Amount}, _From, Accounts) ->
-    Reply = case maps:find(Customer_name, Accounts) of
-                {ok, Balance} ->
-                    New_balance = Balance + Amount,
-                    Accounts1 = maps:update(Customer_name, New_balance, Accounts),
-                    {ok, Customer_name, new_balance_is, New_balance};
-                error ->
-                    Accounts1 = Accounts,
-                    {error, invalid_account}
-            end,
+handle_call({credit, CustomerName, Amount}, _From, Accounts) ->
+  credit_account(CustomerName, Amount, Accounts);
 
-    {reply, Reply, Accounts1};
+handle_call({debit, CustomerName, Amount}, _From, Accounts) ->
+  debit_account(CustomerName, Amount, Accounts);
 
+handle_call({balance, CustomerName}, _From, Accounts) ->
+  account_balance(CustomerName, Accounts);
 
-handle_call({debit, Customer_name, Amount}, _From, Accounts) ->
-    Reply = case maps:find(Customer_name, Accounts) of
-                {ok, Balance} when Balance >= Amount ->
-                    New_balance = Balance - Amount,
-                    Accounts1 = maps:update(Customer_name, New_balance, Accounts),
-                    {ok, Customer_name, new_balance_is, New_balance};
-                {ok, Balance} ->
-                    Accounts1 = Accounts,
-                    {error, low_balance, Balance};
-                error ->
-                    Accounts1 = Accounts,
-                    {error, invalid_account}
-            end,
+handle_call({transfer, FromCustomer, Amount, ToCustomer}, _From, Accounts) ->
+  transfer_amount(FromCustomer, Amount, ToCustomer, Accounts);
 
-    {reply, Reply, Accounts1};
+handle_call({close, CustomerName}, _From, Accounts) ->
+  close_account(CustomerName, Accounts);
 
-
-handle_call({account_balance, Customer_name}, _From, Accounts) ->
-    Reply = case maps:find(Customer_name, Accounts) of
-                {ok, Balance} ->
-                    {ok, Customer_name, balance_is, Balance};
-                error ->
-                    {error, invalid_account}
-            end,
-    {reply, Reply, Accounts};
-
-
-handle_call({close_account, Customer_name}, _From, Accounts) ->
-    Reply = case maps:find(Customer_name, Accounts) of
-                {ok, Balance} when Balance > 0 ->
-                    Accounts1 = Accounts,
-                    {error, Customer_name, please_withdraw_amount, Balance};
-                {ok, _Balance}  ->
-                    Accounts1 = maps:remove(Customer_name, Accounts),
-                    {ok, account_is_closed_for, Customer_name};
-                error ->
-                    Accounts1 = Accounts,
-                    {error, invalid_account}
-            end,
-    {reply, Reply, Accounts1};
-
-
-handle_call({transfer_amount, From_customer, Amount, To_customer}, _From, Accounts) ->
-    Reply = case maps:find(To_customer, Accounts) of
-                error ->
-                    Accounts1 = Accounts,
-                    {error, To_customer, account_does_not_exist};
-                {ok, To_customer_balance} ->
-                    case maps:find(From_customer, Accounts) of
-                        error ->
-                            Accounts1 = Accounts,
-                            {error, From_customer, account_does_not_exist};
-                        {ok, From_customer_balance} when From_customer_balance >= Amount ->
-                            Accounts2 = maps:update(From_customer, From_customer_balance - Amount, Accounts),
-                            Accounts1 = maps:update(To_customer, To_customer_balance + Amount, Accounts2),
-                            {transferred, Amount, from, From_customer, to, To_customer};
-                        {ok, Balance} ->
-                            Accounts1 = Accounts,
-                            {error, insufficient_balance, Balance, in_account, From_customer}
-                    end
-            end,
-            {reply, Reply, Accounts1};
-
-handle_call(stop, _From, Accounts)   ->
+handle_call(stop, _From, Accounts) ->
     {stop, normal, stopped, Accounts}.
 
+handle_cast(_Msg, Accounts) -> {noreply, Accounts}.
 
-handle_cast(_Msg, Accounts)        -> {noreply, Accounts}.
-
-handle_info(_Info, Accounts)       -> {noreply, Accounts}.
+handle_info(_Info, Accounts) -> {noreply, Accounts}.
 
 code_change(_Old_version, Accounts, _Extra) -> {ok, Accounts}.
 
 terminate(_Reason, _Accounts) -> ok.
+
+
+
+% Handling Functions
+new_account(CustomerName, Accounts) ->
+  Reply = case maps:find(CustomerName, Accounts) of
+            {ok, _Balance} ->
+                UpdatedAccounts = Accounts,
+                {error, account_already_exists};
+            error ->
+                UpdatedAccounts = maps:put(CustomerName, 0, Accounts),
+                {ok, account_created}
+          end,
+  {reply, Reply, UpdatedAccounts}.
+
+account_balance(CustomerName, Accounts) ->
+  Reply = case maps:find(CustomerName, Accounts) of
+            {ok, Balance} ->
+                {ok, Balance};
+            error ->
+                {error, invalid_account}
+          end,
+  {reply, Reply, Accounts}.
+  
+credit_account(CustomerName, Amount, Accounts) ->
+  Reply = case maps:find(CustomerName, Accounts) of
+            {ok, Balance} ->
+                UpdatedAccounts = maps:update(CustomerName, Balance + Amount, Accounts),
+                {ok, credited};
+            error ->
+                UpdatedAccounts = Accounts,
+                {error, invalid_account}
+          end,
+{reply, Reply, UpdatedAccounts}.
+
+debit_account(CustomerName, Amount, Accounts) ->
+  Reply = case maps:find(CustomerName, Accounts) of
+            {ok, Balance} when Balance >= Amount ->
+                UpdatedAccounts = maps:update(CustomerName, Balance - Amount, Accounts),
+                {ok, debited};
+            {ok, _Balance} ->
+                UpdatedAccounts = Accounts,
+                {error, insufficient_funds};
+            error ->
+                UpdatedAccounts = Accounts,
+                {error, invalid_account}
+          end,
+{reply, Reply, UpdatedAccounts}.
+
+transfer_amount(FromCustomer, Amount, ToCustomer, Accounts) ->
+  Reply = case maps:find(ToCustomer, Accounts) of
+            error ->
+                UpdatedAccounts = Accounts,
+                {error, ToCustomer, invalid_account};
+            {ok, ToBalance} ->
+                case maps:find(FromCustomer, Accounts) of
+                    error ->
+                        UpdatedAccounts = Accounts,
+                        {error, FromCustomer, invalid_account};
+                    {ok, FromBalance} when FromBalance >= Amount ->
+                        TempAccounts = maps:update(FromCustomer, FromBalance - Amount, Accounts),
+                        UpdatedAccounts = maps:update(ToCustomer, ToBalance + Amount, TempAccounts),
+                        {ok, transferred};
+                    {ok, _Balance} ->
+                        UpdatedAccounts = Accounts,
+                        {error, insufficient_funds}
+                end
+          end,
+  {reply, Reply, UpdatedAccounts}.
+
+close_account(CustomerName, Accounts) ->
+  Reply = case maps:find(CustomerName, Accounts) of
+            {ok, Balance} when Balance > 0 ->
+                UpdatedAccounts = Accounts,
+                {error, account_not_empty};
+            {ok, _Balance}  ->
+                UpdatedAccounts = maps:remove(CustomerName, Accounts),
+                {ok, account_closed};
+            error ->
+                UpdatedAccounts = Accounts,
+                {error, invalid_account}
+          end,
+  {reply, Reply, UpdatedAccounts}.
