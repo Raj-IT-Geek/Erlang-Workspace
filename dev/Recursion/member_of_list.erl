@@ -1,0 +1,2 @@
+-module(member_of_list).
+-export([member/2]).
