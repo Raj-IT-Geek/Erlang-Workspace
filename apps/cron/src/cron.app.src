@@ -1,0 +1,18 @@
+{application, cron,
+ [{description, "Erlang Cron Job Handler"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, { cron_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    mnesia,
+    erlang_localtime
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, []},
+  {licenses, ["Apache 2.0"]},
+  {links, []}
+ ]}.

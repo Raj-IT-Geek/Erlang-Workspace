@@ -1,0 +1,23 @@
+
+
+cron:add_job(every_two_mins, {io, format, ["~n~n........... Executed Task greet successfully!~n`n"]}, {"/2",'_'','_','_','_'}),
+
+cron:add_job(greet1, {io, format, ["~n~n........... Executed Task greet1 successfully!~n`n"]}, {'/1',[12,13,14],11,'_',7}),
+
+cron:add_job(greet2, {io, format, ["~n~n........... Executed Task greet2 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet3, {io, format, ["~n~n........... Executed Task greet3 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet4, {io, format, ["~n~n........... Executed Task greet4 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet5, {io, format, ["~n~n........... Executed Task greet5 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet6, {io, format, ["~n~n........... Executed Task greet6 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet7, {io, format, ["~n~n........... Executed Task greet7 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet8, {io, format, ["~n~n........... Executed Task greet8 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet9, {io, format, ["~n~n........... Executed Task greet9 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}),
+
+cron:add_job(greet10, {io, format, ["~n~n........... Executed Task greet10 successfully!~n`n"]}, {"/2",[12,13],'_','_',7}).

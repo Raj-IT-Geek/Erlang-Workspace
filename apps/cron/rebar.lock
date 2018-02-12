@@ -1,0 +1,4 @@
+[{<<"erlang_localtime">>,
+  {git,"https://github.com/dmitryme/erlang_localtime.git",
+       {ref,"7855cd3ebb4c2eec1ce8f0db6655df1a3c635c0d"}},
+  0}].

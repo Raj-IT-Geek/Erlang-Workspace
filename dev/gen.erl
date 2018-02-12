@@ -5,7 +5,7 @@ start_server() ->
 	register(game_server, spawn(?MODULE, server_loop, [])).
 
 stop_server() ->
-  game_server ! {self(), stop},
+    game_server ! {self(), stop},
 	get_response().
 
 new_user(New_user_name) ->
@@ -53,6 +53,7 @@ server_loop(User_db) ->
 					Random_number = rand:uniform(Max_range),
 					New_pid = spawn(?MODULE, game_loop, [Random_number]),
 					User_db1 = User_db#{User_name => New_pid},
+					%io:format("~nPID: ~p, ~nUser_db: ~p~n", [New_pid, User_db1]),
 					server_loop(User_db1)
 				end;
 
